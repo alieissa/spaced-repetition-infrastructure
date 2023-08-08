@@ -1,15 +1,7 @@
-locals {
-  # Ubuntu AMD64 Image
-  # https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-053b0d53c279acc90
-  # TODO Get ami using data. See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ami
-  # ECS Optimized AMI
-  instance_ami  = "ami-0df65c324f2f7bf68"
-  instance_type = "t2.micro"
-}
-
 resource "aws_launch_template" "sp" {
-  name_prefix   = "sp-lt"
-  instance_type = local.instance_type
+  name_prefix = "sp-lt"
+  # TODO Undo this. It is very expensive
+  instance_type = "t2.medium"
   # ECS optimized AMI id
   image_id = "ami-04d9730eb75fb5301"
 
@@ -38,19 +30,6 @@ resource "aws_launch_template" "sp" {
     description = "EC2 launch template of instances launced by Spaced Repetition ECS cluster"
   }
 }
-
-# resource "aws_security_group" "sp" {
-#   name   = "sp-ecs-sg"
-#   vpc_id = var.vpc_id
-#   egress {
-#     from_port = 0
-#     to_port   = 0
-#     protocol  = "-1"
-#     # prefix_list_ids = [aws_vpc_endpoint.my_endpoint.prefix_list_id]
-#   }
-
-#   tags = {}
-# }
 
 // TODO Add security group to autoscaling group
 // The security group determines in which VPC the 

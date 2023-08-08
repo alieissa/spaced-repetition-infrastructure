@@ -48,8 +48,25 @@ data "aws_iam_policy_document" "sp" {
 ##      Commonly EC2, Lambda
 ## 2. Tell role to accept a certain service to assume it.
 resource "aws_iam_role" "sp" {
-  name                = "sp-ecs-execution"
-  assume_role_policy  = data.aws_iam_policy_document.sp.json
+  name               = "sp-ecs-execution"
+  assume_role_policy = data.aws_iam_policy_document.sp.json
+  inline_policy {
+    name = "sp-container-logs"
+    policy = jsonencode(
+      {
+        "Version" : "2012-10-17",
+        "Statement" : [
+          {
+            "Effect" : "Allow",
+            "Action" : [
+              "logs:CreateLogGroup"
+            ],
+            "Resource" : "*"
+          }
+        ]
+      }
+    )
+  }
   managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
 }
 
@@ -75,22 +92,49 @@ resource "aws_ecs_cluster_capacity_providers" "sp" {
   }
 }
 
+variable "database_url" {}
+variable "secret_key_base" {}
+variable "db_password" {}
+variable "db_username" {}
+variable "db_name" {}
+
+module "load_balancer" {
+  source     = "./load_balancer"
+  vpc_id     = module.vpc.id
+  subnet_ids = module.vpc.subnet_ids
+}
+
 module "api" {
   source                 = "./api"
   execution_role_arn     = aws_iam_role.sp.arn
   cluster_arn            = aws_ecs_cluster.sp.arn
   capacity_provider_name = module.capacity_provider.name
 
+  vpc_id  = module.vpc.id
   subnets = module.vpc.subnet_ids
-
-  depends_on = [aws_ecs_cluster_capacity_providers.sp]
+  # security_group_id =
+  # TODO REmove database_url and secret_key_base
+  database_url         = var.database_url
+  secret_key_base      = var.secret_key_base
+  db_username          = var.db_username
+  db_password          = var.db_password
+  db_name              = var.db_name
+  db_endpoint          = module.database.db_endpoint
+  lb_target_group_arn  = module.load_balancer.target_group_arn
+  lb_security_group_id = module.load_balancer.security_group_id
+  depends_on           = [aws_ecs_cluster_capacity_providers.sp]
 }
 
 module "database" {
-  source                 = "./database"
-  cluster_arn            = aws_ecs_cluster.sp.arn
-  capacity_provider_name = module.capacity_provider.name
-  execution_role_arn     = aws_iam_role.sp.arn
+  source = "./database"
+  # cluster_arn            = aws_ecs_cluster.sp.arn
+  # capacity_provider_name = module.capacity_provider.name
+  # execution_role_arn     = aws_iam_role.sp.arn
+  vpc_id      = module.vpc.id
+  subnets     = module.vpc.subnet_ids
+  db_name     = var.db_name
+  db_username = var.db_username
+  db_password = var.db_password
   # subnets = [
   #   "subnet-00abb90b5f706243d",
   #   "subnet-02eea0120995f0af4",
@@ -99,5 +143,4 @@ module "database" {
   #   "subnet-0ad6a5013efa115b8",
   #   "subnet-0f368352560dc8bed",
   # ]
-  subnets = module.vpc.subnet_ids
 }

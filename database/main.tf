@@ -1,59 +1,50 @@
 
-resource "aws_ecs_task_definition" "sp_db" {
-  cpu                      = "1024"
-  family                   = "sp-db-task"
-  memory                   = "500"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["EC2"]
-  execution_role_arn       = var.execution_role_arn
+resource "aws_security_group" "sp_rds" {
+  vpc_id      = var.vpc_id
+  name        = "Spaced Repetition RDS sg"
+  description = "Allow all inbound for Postgres"
 
-  container_definitions = jsonencode(
-    [
-      {
-        name = "sp-db"
-        # TODO Replace with value from data
-        image = "public.ecr.aws/docker/library/postgres:alpine3.18"
-        portMappings = [
-          {
-            appProtocol   = "http"
-            containerPort = 5432
-            protocol      = "tcp"
-          },
-        ],
-        environment = [{ name : "POSTGRES_PASSWORD", value : "test1" }]
-      },
-    ]
-  )
-
-  runtime_platform {
-    cpu_architecture        = "X86_64"
-    operating_system_family = "LINUX"
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    description = "Definition of task that is used to create the Spaced Repetition app db containers"
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
-resource "aws_ecs_service" "sp_db" {
-  cluster         = var.cluster_arn
-  desired_count   = 1
-  name            = "sp-db-service"
-  tags_all        = {}
-  task_definition = aws_ecs_task_definition.sp_db.arn
+resource "aws_db_subnet_group" "sp_rds" {
+  name       = "sp-rds"
+  subnet_ids = var.subnets
 
-  capacity_provider_strategy {
-    base              = 0
-    capacity_provider = var.capacity_provider_name
-    weight            = 1
+  tags = {
+    Name = "My DB subnet group"
   }
+}
 
-  deployment_circuit_breaker {
-    enable   = true
-    rollback = true
-  }
+resource "aws_db_instance" "sp" {
+  identifier        = "sp-rds-instance"
+  allocated_storage = 20
+  engine            = "postgres"
+  engine_version    = "14.7"
+  instance_class    = "db.t3.micro"
+  # Get db_name username and password from env vars
+  # db_name                = "spaced_repetition_api"
+  # username               = "spaced_repetition"
+  # password               = "spaced_repetition"
 
-  network_configuration {
-    subnets = var.subnets
-  }
+  db_name  = var.db_name
+  username = var.db_username
+  password = var.db_password
+
+  db_subnet_group_name   = aws_db_subnet_group.sp_rds.name
+  vpc_security_group_ids = [aws_security_group.sp_rds.id]
+  # parameter_group_name = "default.mysql5.7"
+  skip_final_snapshot = true
 }

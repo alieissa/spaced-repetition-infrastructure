@@ -1,0 +1,5 @@
+database_url    = "ecto://spaced-repetition:spaced-repetition@sp-rds-instance.camg2cfbeqxh.us-east-1.rds.amazonaws.com/spaced_repetition_api"
+db_username     = "spaced_repetition"
+db_password     = "spaced_repetition"
+db_name         = "spaced_repetition_api"
+secret_key_base = "8343829rjlsdf9j23kf09"
