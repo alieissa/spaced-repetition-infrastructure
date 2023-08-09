@@ -8,24 +8,21 @@ variable "subnets" {
   description = "List of subnets"
 }
 
-variable "db_name" {
-  type = string
-}
-
-variable "db_password" {
-  type = string
-}
-
-variable "db_username" {
-  type = string
-}
-
-# TODO At the moment security group is undefined to it
-# uses the default one.
-# variable "security_group_id" {
+# variable "db_name" {
 #   type = string
-#   description = "ID of security group for this service. Tandem with subnet controls flow of traffic."
 # }
+
+# variable "db_password" {
+#   type = string
+# }
+
+# variable "db_username" {
+#   type = string
+# }
+
+variable "security_group_ids" {
+  type = list(string)
+}
 
 # variable "execution_role_arn" {
 #   type        = string

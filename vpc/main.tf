@@ -8,9 +8,9 @@ resource "aws_vpc" "sp" {
   enable_dns_hostnames = true
 
   tags = {
-    Name = "sp-vpc"
+    Name        = "sp-vpc"
     description = "Spaced repetition VPC"
-    owner = "terraform"
+    owner       = "terraform"
   }
 }
 
@@ -21,12 +21,12 @@ resource "aws_subnet" "sp" {
     us-east-1c = "10.0.3.0/24"
   }
 
-  vpc_id = aws_vpc.sp.id
-  cidr_block = each.value
+  vpc_id            = aws_vpc.sp.id
+  cidr_block        = each.value
   availability_zone = each.key
 
   tags = {
-    Name = "sp-subnet"
+    Name  = "sp-subnet"
     owner = "terraform"
   }
 }
@@ -62,38 +62,3 @@ resource "aws_route_table_association" "sp" {
   subnet_id      = each.value.id
   route_table_id = aws_route_table.sp.id
 }
-
-# resource "aws_route_table_association" "sp_1" {
-#   subnet_id      = aws_subnet.sp_1.id
-#   route_table_id = aws_route_table.sp.id
-# }
-
-# resource "aws_route_table_association" "sp_2" {
-#   subnet_id      = aws_subnet.sp_2.id
-#   route_table_id = aws_route_table.sp.id
-# }
-
-# resource "aws_route_table_association" "sp_3" {
-#   subnet_id      = aws_subnet.sp_3.id
-#   route_table_id = aws_route_table.sp.id
-# }
-
-# resource "aws_security_group" "sp_rds" {
-#   vpc_id = aws_vpc.sp.id
-
-#   egress {
-#     description = "Connect to Postgres RDS"
-#     from_port   = 5432
-#     to_port     = 5432
-#     protocol    = "tcp"
-#     cidr_blocks = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-#   }
-
-#   egress {
-#     from_port        = 0
-#     to_port          = 0
-#     protocol         = "-1"
-#     cidr_blocks      = ["0.0.0.0/0"]
-#     ipv6_cidr_blocks = ["::/0"]
-#   }
-# }

@@ -22,6 +22,8 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# TODO Create a module for cluster and capacity provider
+# resources.
 resource "aws_ecs_cluster" "sp" {
   name = "sp-cluster"
 
@@ -30,7 +32,8 @@ resource "aws_ecs_cluster" "sp" {
   }
 }
 
-##### ROLE ####
+
+# TODO Move IAM resource definitions to security module
 data "aws_iam_policy_document" "sp" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -75,9 +78,12 @@ module "vpc" {
 }
 
 module "capacity_provider" {
-  source     = "./capacity_provider"
-  vpc_id     = module.vpc.id
-  subnet_ids = module.vpc.subnet_ids
+  source             = "./capacity_provider"
+  vpc_id             = module.vpc.id
+  subnet_ids         = module.vpc.subnet_ids
+  security_group_ids = [module.security.app_security_group_id]
+
+  depends_on = [module.vpc]
 }
 
 ## Depends on ECS Cluster and Capacity provider
@@ -86,61 +92,52 @@ resource "aws_ecs_cluster_capacity_providers" "sp" {
   capacity_providers = [module.capacity_provider.name]
 
   default_capacity_provider_strategy {
-    capacity_provider = module.capacity_provider.name
     base              = 0
     weight            = 1
+    capacity_provider = module.capacity_provider.name
   }
 }
 
-variable "database_url" {}
-variable "secret_key_base" {}
-variable "db_password" {}
-variable "db_username" {}
-variable "db_name" {}
 
-module "load_balancer" {
-  source     = "./load_balancer"
-  vpc_id     = module.vpc.id
-  subnet_ids = module.vpc.subnet_ids
+variable "secret_key_base" {}
+
+module "security" {
+  source = "./security"
+  vpc_id = module.vpc.id
 }
 
-module "api" {
-  source                 = "./api"
-  execution_role_arn     = aws_iam_role.sp.arn
-  cluster_arn            = aws_ecs_cluster.sp.arn
-  capacity_provider_name = module.capacity_provider.name
+module "load_balancer" {
+  source             = "./load_balancer"
+  vpc_id             = module.vpc.id
+  subnet_ids         = module.vpc.subnet_ids
+  security_group_ids = [module.security.lb_security_group_id]
 
-  vpc_id  = module.vpc.id
-  subnets = module.vpc.subnet_ids
-  # security_group_id =
-  # TODO REmove database_url and secret_key_base
-  database_url         = var.database_url
-  secret_key_base      = var.secret_key_base
-  db_username          = var.db_username
-  db_password          = var.db_password
-  db_name              = var.db_name
-  db_endpoint          = module.database.db_endpoint
-  lb_target_group_arn  = module.load_balancer.target_group_arn
-  lb_security_group_id = module.load_balancer.security_group_id
-  depends_on           = [aws_ecs_cluster_capacity_providers.sp]
+  depends_on = [module.security]
+}
+
+module "app" {
+  source = "./app"
+
+  cluster_arn             = aws_ecs_cluster.sp.arn
+  task_execution_role_arn = aws_iam_role.sp.arn
+  capacity_provider_name  = module.capacity_provider.name
+
+  vpc_id             = module.vpc.id
+  subnets            = module.vpc.subnet_ids
+  security_group_ids = [module.security.app_security_group_id]
+
+  # TODO Remove secret_key_base
+  secret_key_base     = var.secret_key_base
+  db_endpoint         = module.database.db_endpoint
+  lb_target_group_arn = module.load_balancer.target_group_arn
 }
 
 module "database" {
-  source = "./database"
-  # cluster_arn            = aws_ecs_cluster.sp.arn
-  # capacity_provider_name = module.capacity_provider.name
-  # execution_role_arn     = aws_iam_role.sp.arn
-  vpc_id      = module.vpc.id
-  subnets     = module.vpc.subnet_ids
-  db_name     = var.db_name
-  db_username = var.db_username
-  db_password = var.db_password
-  # subnets = [
-  #   "subnet-00abb90b5f706243d",
-  #   "subnet-02eea0120995f0af4",
-  #   "subnet-059fd8cec143ec73c",
-  #   "subnet-09113889944b02aa5",
-  #   "subnet-0ad6a5013efa115b8",
-  #   "subnet-0f368352560dc8bed",
-  # ]
+  source             = "./database"
+  vpc_id             = module.vpc.id
+  subnets            = module.vpc.subnet_ids
+  security_group_ids = [module.security.db_security_group_id]
+
+  depends_on = [module.security]
+
 }

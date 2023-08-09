@@ -1,22 +1,13 @@
+data "aws_ssm_parameter" "db_name" {
+  name = "db_name"
+}
 
-resource "aws_security_group" "sp_rds" {
-  vpc_id      = var.vpc_id
-  name        = "Spaced Repetition RDS sg"
-  description = "Allow all inbound for Postgres"
+data "aws_ssm_parameter" "db_username" {
+  name = "db_username"
+}
 
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+data "aws_ssm_parameter" "db_password" {
+  name = "db_password"
 }
 
 resource "aws_db_subnet_group" "sp_rds" {
@@ -29,7 +20,7 @@ resource "aws_db_subnet_group" "sp_rds" {
 }
 
 resource "aws_db_instance" "sp" {
-  identifier        = "sp-rds-instance"
+  identifier        = "sp-rds"
   allocated_storage = 20
   engine            = "postgres"
   engine_version    = "14.7"
@@ -39,12 +30,16 @@ resource "aws_db_instance" "sp" {
   # username               = "spaced_repetition"
   # password               = "spaced_repetition"
 
-  db_name  = var.db_name
-  username = var.db_username
-  password = var.db_password
+  # db_name  = var.db_name
+  # username = var.db_username
+  # password = var.db_password
+
+  db_name  = data.aws_ssm_parameter.db_name.value
+  username = data.aws_ssm_parameter.db_username.value
+  password = data.aws_ssm_parameter.db_password.value
 
   db_subnet_group_name   = aws_db_subnet_group.sp_rds.name
-  vpc_security_group_ids = [aws_security_group.sp_rds.id]
+  vpc_security_group_ids = var.security_group_ids
   # parameter_group_name = "default.mysql5.7"
   skip_final_snapshot = true
 }

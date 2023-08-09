@@ -7,10 +7,13 @@ resource "aws_launch_template" "sp" {
 
   user_data = filebase64("${path.module}/config.sh")
 
+  #  vpc_security_group_ids = var.security_group_ids
   // Important: Allow ECS agent to communicate with
   // cluster
   network_interfaces {
     associate_public_ip_address = true
+    delete_on_termination       = true
+    security_groups             = var.security_group_ids
   }
 
   tag_specifications {
@@ -31,14 +34,13 @@ resource "aws_launch_template" "sp" {
   }
 }
 
-// TODO Add security group to autoscaling group
-// The security group determines in which VPC the 
-// container instances are housed
 resource "aws_autoscaling_group" "sp" {
-  name                = "sp-ecs-asg"
-  max_size            = 3
-  min_size            = 2
-  desired_capacity    = 2
+  name             = "sp-ecs-asg"
+  max_size         = 3
+  min_size         = 2
+  desired_capacity = 2
+  # Determines, via the subnets, the VPC to which instances
+  # of ASG belong
   vpc_zone_identifier = var.subnet_ids
 
   launch_template {
