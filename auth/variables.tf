@@ -24,9 +24,16 @@ variable "subnets" {
 }
 
 variable "security_group_ids" {
-  type = list(string)
+  type        = list(string)
+  description = "Security group applied to the container instances. This is need because network type is set to awsvpc"
 }
 
 variable "lb_target_group_arn" {
-  type = string
+  type        = string
+  description = "Target group used by the load balancer of the service."
+}
+
+variable "redis_endpoint" {
+  type        = string
+  description = "The endpoint of the redis cluster"
 }

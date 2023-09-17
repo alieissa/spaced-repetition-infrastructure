@@ -1,0 +1,25 @@
+data "aws_ssm_parameter" "redis_port" {
+  name = "redis_port"
+}
+
+resource "aws_elasticache_subnet_group" "sp_auth" {
+  name       = "sp-auth-sg"
+  subnet_ids = var.subnet_ids
+}
+
+resource "aws_elasticache_replication_group" "sp_auth" {
+  num_node_groups            = 2
+  replicas_per_node_group    = 1
+  replication_group_id       = "sp-auth-rep-group-1"
+  description                = "Redis replication group/shards"
+  node_type                  = "cache.t4g.micro"
+  parameter_group_name       = "default.redis7.cluster.on"
+  automatic_failover_enabled = true
+  port                       = tonumber(data.aws_ssm_parameter.redis_port.value)
+
+  subnet_group_name = aws_elasticache_subnet_group.sp_auth.name
+
+  lifecycle {
+    ignore_changes = [num_cache_clusters]
+  }
+}

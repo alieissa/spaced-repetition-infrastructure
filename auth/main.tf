@@ -1,5 +1,5 @@
 data "aws_ecr_repository" "sp" {
-  name = "spaced-repetition-api"
+  name = "spaced-repetition-user-management"
 }
 
 data "aws_iam_role" "sp" {
@@ -18,8 +18,8 @@ data "aws_ssm_parameter" "db_password" {
   name = "db_password"
 }
 
-data "aws_ssm_parameter" "app_port" {
-  name = "app_port"
+data "aws_ssm_parameter" "auth_port" {
+  name = "auth_port"
 }
 
 data "aws_ssm_parameter" "secret_key_base" {
@@ -27,11 +27,11 @@ data "aws_ssm_parameter" "secret_key_base" {
 }
 
 locals {
-  container_name = "sp-app"
+  container_name = "sp-auth"
 }
 
-resource "aws_ecs_task_definition" "sp_app" {
-  family                   = "sp-app"
+resource "aws_ecs_task_definition" "sp_auth" {
+  family                   = "sp-auth"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
   execution_role_arn       = data.aws_iam_role.sp.arn
@@ -47,7 +47,7 @@ resource "aws_ecs_task_definition" "sp_app" {
         logConfiguration = {
           logDriver = "awslogs"
           options = {
-            "awslogs-group"         = "/ecs/sp-app"
+            "awslogs-group"         = "/ecs/sp-auth"
             "awslogs-region"        = "us-east-1"
             "awslogs-create-group"  = "true"
             "awslogs-stream-prefix" = "ecs"
@@ -56,15 +56,19 @@ resource "aws_ecs_task_definition" "sp_app" {
 
         portMappings = [
           {
-            containerPort = tonumber(data.aws_ssm_parameter.app_port.value)
-            hostPort      = tonumber(data.aws_ssm_parameter.app_port.value)
+            containerPort = tonumber(data.aws_ssm_parameter.auth_port.value)
+            hostPort      = tonumber(data.aws_ssm_parameter.auth_port.value)
           },
         ]
 
         environment = [
           {
             name  = "PORT"
-            value = tostring(data.aws_ssm_parameter.app_port.value)
+            value = tostring(data.aws_ssm_parameter.auth_port.value)
+          },
+          {
+            name  = "REDIS_ENDPOINT",
+            value = var.redis_endpoint
           },
           {
             name  = "DATABASE_URL"
@@ -80,15 +84,15 @@ resource "aws_ecs_task_definition" "sp_app" {
   )
 
   tags = {
-    description = "Definition of task that is used to create the Spaced Repetition api containers"
+    description = "Definition of task that is used to create the Spaced Repetition user management containers"
   }
 }
 
-resource "aws_ecs_service" "sp_app" {
-  name                              = "sp-app"
+resource "aws_ecs_service" "sp_auth" {
+  name                              = "sp-auth"
   desired_count                     = 2
   health_check_grace_period_seconds = 300
-  task_definition                   = aws_ecs_task_definition.sp_app.arn
+  task_definition                   = aws_ecs_task_definition.sp_auth.arn
   cluster                           = var.cluster_arn
 
   capacity_provider_strategy {
@@ -110,7 +114,7 @@ resource "aws_ecs_service" "sp_app" {
   load_balancer {
     container_name   = local.container_name
     target_group_arn = var.lb_target_group_arn
-    container_port   = tonumber(data.aws_ssm_parameter.app_port.value)
+    container_port   = tonumber(data.aws_ssm_parameter.auth_port.value)
   }
 
   tags = {

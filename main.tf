@@ -22,84 +22,19 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# TODO Create a module for cluster and capacity provider
-# resources.
-resource "aws_ecs_cluster" "sp" {
-  name = "sp-cluster"
-
-  tags = {
-    description = "ECS cluster in which the Spaced Repetition is deployed."
-  }
-}
-
-
-# TODO Move IAM resource definitions to security module
-data "aws_iam_policy_document" "sp" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
-}
-## 1. Give a service to assume a role on my behalf.
-##   a. sts:AssumeRole is the action
-##   b. Service is the type of entity
-##   c. Identifiers is the service identifier
-##      Commonly EC2, Lambda
-## 2. Tell role to accept a certain service to assume it.
-resource "aws_iam_role" "sp" {
-  name               = "sp-ecs-execution"
-  assume_role_policy = data.aws_iam_policy_document.sp.json
-  inline_policy {
-    name = "sp-container-logs"
-    policy = jsonencode(
-      {
-        "Version" : "2012-10-17",
-        "Statement" : [
-          {
-            "Effect" : "Allow",
-            "Action" : [
-              "logs:CreateLogGroup"
-            ],
-            "Resource" : "*"
-          }
-        ]
-      }
-    )
-  }
-  managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
-}
-
 module "vpc" {
   source = "./vpc"
 }
 
-module "capacity_provider" {
-  source             = "./capacity_provider"
-  vpc_id             = module.vpc.id
-  subnet_ids         = module.vpc.subnet_ids
-  security_group_ids = [module.security.app_security_group_id]
+module "cluster" {
+  source = "./cluster"
+
+  auth_subnet_ids    = module.vpc.auth_subnet_ids
+  app_subnet_ids     = module.vpc.app_subnet_ids
+  security_group_ids = [module.security.app_security_group_id, module.security.auth_security_group_id]
 
   depends_on = [module.vpc]
 }
-
-## Depends on ECS Cluster and Capacity provider
-resource "aws_ecs_cluster_capacity_providers" "sp" {
-  cluster_name       = aws_ecs_cluster.sp.name
-  capacity_providers = [module.capacity_provider.name]
-
-  default_capacity_provider_strategy {
-    base              = 0
-    weight            = 1
-    capacity_provider = module.capacity_provider.name
-  }
-}
-
-
-variable "secret_key_base" {}
 
 module "security" {
   source = "./security"
@@ -109,7 +44,7 @@ module "security" {
 module "load_balancer" {
   source             = "./load_balancer"
   vpc_id             = module.vpc.id
-  subnet_ids         = module.vpc.subnet_ids
+  subnet_ids         = concat(module.vpc.auth_subnet_ids, module.vpc.app_subnet_ids)
   security_group_ids = [module.security.lb_security_group_id]
 
   depends_on = [module.security]
@@ -118,26 +53,55 @@ module "load_balancer" {
 module "app" {
   source = "./app"
 
-  cluster_arn             = aws_ecs_cluster.sp.arn
-  task_execution_role_arn = aws_iam_role.sp.arn
-  capacity_provider_name  = module.capacity_provider.name
+  cluster_arn            = module.cluster.arn
+  capacity_provider_name = module.cluster.capacity_providers[1]
 
   vpc_id             = module.vpc.id
-  subnets            = module.vpc.subnet_ids
+  subnets            = module.vpc.app_subnet_ids
   security_group_ids = [module.security.app_security_group_id]
 
-  # TODO Remove secret_key_base
-  secret_key_base     = var.secret_key_base
   db_endpoint         = module.database.db_endpoint
-  lb_target_group_arn = module.load_balancer.target_group_arn
+  lb_target_group_arn = module.load_balancer.app_target_group_arn
+}
+
+module "auth" {
+  source = "./auth"
+
+  cluster_arn            = module.cluster.arn
+  capacity_provider_name = module.cluster.capacity_providers[0]
+
+  vpc_id             = module.vpc.id
+  subnets            = module.vpc.auth_subnet_ids
+  security_group_ids = [module.security.auth_security_group_id]
+
+  db_endpoint         = module.database.db_endpoint
+  redis_endpoint      = module.cache.redis_endpoint
+  lb_target_group_arn = module.load_balancer.auth_target_group_arn
+
+  depends_on = [module.cache]
+}
+
+module "bastion" {
+  source = "./bastion"
+  vpc_id = module.vpc.id
 }
 
 module "database" {
   source             = "./database"
   vpc_id             = module.vpc.id
-  subnets            = module.vpc.subnet_ids
-  security_group_ids = [module.security.db_security_group_id]
+  subnets            = concat(module.vpc.auth_subnet_ids, module.vpc.app_subnet_ids)
+  security_group_ids = [module.security.db_security_group_id, module.bastion.security_group_id]
 
   depends_on = [module.security]
+}
 
+module "cache" {
+  source     = "./cache"
+  subnet_ids = module.vpc.elasticache_subnet_ids
+}
+
+module "dns" {
+  source             = "./cloudflare"
+  CLOUDFLARE_API_KEY = var.CLOUDFLARE_API_KEY
+  target             = module.load_balancer.lb_dns_name
 }

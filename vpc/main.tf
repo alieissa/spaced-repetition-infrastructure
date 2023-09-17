@@ -14,11 +14,10 @@ resource "aws_vpc" "sp" {
   }
 }
 
-resource "aws_subnet" "sp" {
+resource "aws_subnet" "sp_auth" {
   for_each = {
-    us-east-1a = "10.0.1.0/24"
-    us-east-1b = "10.0.2.0/24"
-    us-east-1c = "10.0.3.0/24"
+    us-east-1c = "10.0.1.0/24"
+    us-east-1d = "10.0.2.0/24"
   }
 
   vpc_id            = aws_vpc.sp.id
@@ -26,7 +25,39 @@ resource "aws_subnet" "sp" {
   availability_zone = each.key
 
   tags = {
-    Name  = "sp-subnet"
+    Name  = "sp-auth-subnet"
+    owner = "terraform"
+  }
+}
+
+resource "aws_subnet" "sp_app" {
+  for_each = {
+    us-east-1a = "10.0.3.0/24"
+    us-east-1b = "10.0.4.0/24"
+  }
+
+  vpc_id            = aws_vpc.sp.id
+  cidr_block        = each.value
+  availability_zone = each.key
+
+  tags = {
+    Name  = "sp-app-subnet"
+    owner = "terraform"
+  }
+}
+
+resource "aws_subnet" "sp_redis" {
+  for_each = {
+    us-east-1e = "10.0.5.0/24"
+    us-east-1f = "10.0.6.0/24"
+  }
+
+  vpc_id            = aws_vpc.sp.id
+  cidr_block        = each.value
+  availability_zone = each.key
+
+  tags = {
+    Name  = "sp-redis-subnet"
     owner = "terraform"
   }
 }
@@ -56,8 +87,15 @@ resource "aws_route_table" "sp" {
   }
 }
 
-resource "aws_route_table_association" "sp" {
-  for_each = aws_subnet.sp
+resource "aws_route_table_association" "sp_auth" {
+  for_each = aws_subnet.sp_auth
+
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.sp.id
+}
+
+resource "aws_route_table_association" "sp_app" {
+  for_each = aws_subnet.sp_app
 
   subnet_id      = each.value.id
   route_table_id = aws_route_table.sp.id
