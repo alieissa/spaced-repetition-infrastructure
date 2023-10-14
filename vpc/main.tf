@@ -30,7 +30,7 @@ resource "aws_subnet" "sp_auth" {
   }
 }
 
-resource "aws_subnet" "sp_app" {
+resource "aws_subnet" "sp_api" {
   for_each = {
     us-east-1a = "10.0.3.0/24"
     us-east-1b = "10.0.4.0/24"
@@ -41,7 +41,7 @@ resource "aws_subnet" "sp_app" {
   availability_zone = each.key
 
   tags = {
-    Name  = "sp-app-subnet"
+    Name  = "sp-api-subnet"
     owner = "terraform"
   }
 }
@@ -94,8 +94,8 @@ resource "aws_route_table_association" "sp_auth" {
   route_table_id = aws_route_table.sp.id
 }
 
-resource "aws_route_table_association" "sp_app" {
-  for_each = aws_subnet.sp_app
+resource "aws_route_table_association" "sp_api" {
+  for_each = aws_subnet.sp_api
 
   subnet_id      = each.value.id
   route_table_id = aws_route_table.sp.id

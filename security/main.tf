@@ -1,8 +1,8 @@
 data "aws_ssm_parameter" "auth_port" {
   name = "auth_port"
 }
-data "aws_ssm_parameter" "app_port" {
-  name = "app_port"
+data "aws_ssm_parameter" "api_port" {
+  name = "api_port"
 }
 data "aws_ssm_parameter" "db_port" {
   name = "db_port"
@@ -63,8 +63,8 @@ resource "aws_security_group" "sp_lb" {
   }
 }
 
-resource "aws_security_group" "sp_app" {
-  name        = "sp-app"
+resource "aws_security_group" "sp_api" {
+  name        = "sp-api"
   description = "Allow all outbound rules for api"
   vpc_id      = var.vpc_id
 
@@ -77,13 +77,13 @@ resource "aws_security_group" "sp_app" {
 
   ingress {
     protocol        = "TCP"
-    from_port       = tonumber(data.aws_ssm_parameter.app_port.value)
-    to_port         = tonumber(data.aws_ssm_parameter.app_port.value)
+    from_port       = tonumber(data.aws_ssm_parameter.api_port.value)
+    to_port         = tonumber(data.aws_ssm_parameter.api_port.value)
     security_groups = [aws_security_group.sp_lb.id]
   }
 
   tags = {
-    Name  = "sp-app"
+    Name  = "sp-api"
     owner = "terraform"
   }
 }
@@ -111,8 +111,8 @@ resource "aws_security_group_rule" "auth_lb" {
   protocol                 = "TCP"
   security_group_id        = aws_security_group.sp_lb.id
   source_security_group_id = aws_security_group.sp_auth.id
-  from_port                = tonumber(data.aws_ssm_parameter.app_port.value)
-  to_port                  = tonumber(data.aws_ssm_parameter.app_port.value)
+  from_port                = tonumber(data.aws_ssm_parameter.api_port.value)
+  to_port                  = tonumber(data.aws_ssm_parameter.api_port.value)
 }
 
 resource "aws_security_group_rule" "lb_auth" {
@@ -134,7 +134,7 @@ resource "aws_security_group" "sp_rds" {
     from_port = tonumber(data.aws_ssm_parameter.db_port.value)
     to_port   = tonumber(data.aws_ssm_parameter.db_port.value)
     security_groups = [
-      aws_security_group.sp_app.id,
+      aws_security_group.sp_api.id,
       aws_security_group.sp_auth.id
     ]
   }

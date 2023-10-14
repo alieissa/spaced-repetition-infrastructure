@@ -26,6 +26,14 @@ data "aws_ssm_parameter" "secret_key_base" {
   name = "secret_key_base"
 }
 
+data "aws_ssm_parameter" "ses_access_key" {
+  name = "ses_access_key"
+}
+
+data "aws_ssm_parameter" "ses_secret" {
+  name = "ses_secret"
+}
+
 locals {
   container_name = "sp-auth"
 }
@@ -77,6 +85,14 @@ resource "aws_ecs_task_definition" "sp_auth" {
           {
             name  = "SECRET_KEY_BASE"
             value = data.aws_ssm_parameter.secret_key_base.value
+          },
+          {
+            name  = "AWS_SES_ACCESS_KEY",
+            value = data.aws_ssm_parameter.ses_access_key.value
+          },
+          {
+            name  = "AWS_SES_SECRET_ACCESS_KEY",
+            value = data.aws_ssm_parameter.ses_secret.value
           }
         ]
       },

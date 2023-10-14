@@ -18,8 +18,8 @@ data "aws_ssm_parameter" "db_password" {
   name = "db_password"
 }
 
-data "aws_ssm_parameter" "app_port" {
-  name = "app_port"
+data "aws_ssm_parameter" "api_port" {
+  name = "api_port"
 }
 
 data "aws_ssm_parameter" "secret_key_base" {
@@ -27,11 +27,11 @@ data "aws_ssm_parameter" "secret_key_base" {
 }
 
 locals {
-  container_name = "sp-app"
+  container_name = "sp-api"
 }
 
-resource "aws_ecs_task_definition" "sp_app" {
-  family                   = "sp-app"
+resource "aws_ecs_task_definition" "sp_api" {
+  family                   = "sp-api"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
   execution_role_arn       = data.aws_iam_role.sp.arn
@@ -47,7 +47,7 @@ resource "aws_ecs_task_definition" "sp_app" {
         logConfiguration = {
           logDriver = "awslogs"
           options = {
-            "awslogs-group"         = "/ecs/sp-app"
+            "awslogs-group"         = "/ecs/sp-api"
             "awslogs-region"        = "us-east-1"
             "awslogs-create-group"  = "true"
             "awslogs-stream-prefix" = "ecs"
@@ -56,15 +56,15 @@ resource "aws_ecs_task_definition" "sp_app" {
 
         portMappings = [
           {
-            containerPort = tonumber(data.aws_ssm_parameter.app_port.value)
-            hostPort      = tonumber(data.aws_ssm_parameter.app_port.value)
+            containerPort = tonumber(data.aws_ssm_parameter.api_port.value)
+            hostPort      = tonumber(data.aws_ssm_parameter.api_port.value)
           },
         ]
 
         environment = [
           {
             name  = "PORT"
-            value = tostring(data.aws_ssm_parameter.app_port.value)
+            value = tostring(data.aws_ssm_parameter.api_port.value)
           },
           {
             name  = "DATABASE_URL"
@@ -84,11 +84,11 @@ resource "aws_ecs_task_definition" "sp_app" {
   }
 }
 
-resource "aws_ecs_service" "sp_app" {
-  name                              = "sp-app"
+resource "aws_ecs_service" "sp_api" {
+  name                              = "sp-api"
   desired_count                     = 2
   health_check_grace_period_seconds = 300
-  task_definition                   = aws_ecs_task_definition.sp_app.arn
+  task_definition                   = aws_ecs_task_definition.sp_api.arn
   cluster                           = var.cluster_arn
 
   capacity_provider_strategy {
@@ -110,7 +110,7 @@ resource "aws_ecs_service" "sp_app" {
   load_balancer {
     container_name   = local.container_name
     target_group_arn = var.lb_target_group_arn
-    container_port   = tonumber(data.aws_ssm_parameter.app_port.value)
+    container_port   = tonumber(data.aws_ssm_parameter.api_port.value)
   }
 
   tags = {

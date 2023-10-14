@@ -4,7 +4,7 @@ locals {
   user_data     = filebase64("${path.module}/config.sh")
   services = {
     names   = ["sp-auth", "sp-app"]
-    subnets = [var.auth_subnet_ids, var.app_subnet_ids]
+    subnets = [var.auth_subnet_ids, var.api_subnet_ids]
   }
 }
 

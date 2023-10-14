@@ -6,6 +6,6 @@ variable "auth_subnet_ids" {
   type = list(string)
 }
 
-variable "app_subnet_ids" {
+variable "api_subnet_ids" {
   type = list(string)
 }

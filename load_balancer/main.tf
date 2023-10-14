@@ -2,8 +2,8 @@ data "aws_ssm_parameter" "auth_port" {
   name = "auth_port"
 }
 
-data "aws_ssm_parameter" "app_port" {
-  name = "app_port"
+data "aws_ssm_parameter" "api_port" {
+  name = "api_port"
 }
 
 data "aws_acm_certificate" "sp" {
@@ -11,7 +11,7 @@ data "aws_acm_certificate" "sp" {
   statuses = ["ISSUED"]
 }
 
-resource "aws_lb" "sp_app" {
+resource "aws_lb" "sp_api" {
   name                       = "sp-app-alb"
   internal                   = true
   load_balancer_type         = "application"
@@ -28,16 +28,16 @@ resource "aws_lb" "sp" {
   security_groups            = var.security_group_ids
 }
 
-resource "aws_lb_target_group" "sp_app" {
+resource "aws_lb_target_group" "sp_api" {
   name        = "sp-app"
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = var.vpc_id
-  port        = tonumber(data.aws_ssm_parameter.app_port.value)
+  port        = tonumber(data.aws_ssm_parameter.api_port.value)
 
   health_check {
     path = "/health"
-    port = tonumber(data.aws_ssm_parameter.app_port.value)
+    port = tonumber(data.aws_ssm_parameter.api_port.value)
   }
 
   tags = {
@@ -76,12 +76,12 @@ resource "aws_lb_listener" "sp_auth" {
   }
 }
 
-resource "aws_lb_listener" "sp_app" {
+resource "aws_lb_listener" "sp_api" {
   load_balancer_arn = aws_lb.sp.id
-  port              = tonumber(data.aws_ssm_parameter.app_port.value)
+  port              = tonumber(data.aws_ssm_parameter.api_port.value)
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.sp_app.id
+    target_group_arn = aws_lb_target_group.sp_api.id
   }
 }

@@ -8,9 +8,9 @@ output "auth_subnet_ids" {
   ]
 }
 
-output "app_subnet_ids" {
+output "api_subnet_ids" {
   value = [
-    for k, v in aws_subnet.sp_app : v.id
+    for k, v in aws_subnet.sp_api : v.id
   ]
 }
 
