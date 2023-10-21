@@ -1,13 +1,20 @@
-data "aws_ssm_parameter" "redis_port" {
+data aws_ssm_parameter redis_port {
   name = "redis_port"
 }
 
-resource "aws_elasticache_subnet_group" "sp_auth" {
-  name       = "sp-auth-sg"
-  subnet_ids = var.subnet_ids
+data aws_subnets sp_cache {
+  filter {
+    name   = "tag:Name"
+    values = ["sp-cache"]
+  }
 }
 
-resource "aws_elasticache_replication_group" "sp_auth" {
+resource aws_elasticache_subnet_group sp_auth {
+  name       = "sp-auth-sg"
+  subnet_ids = data.aws_subnets.sp_cache.ids
+}
+
+resource aws_elasticache_replication_group sp_auth {
   num_node_groups            = 2
   replicas_per_node_group    = 1
   replication_group_id       = "sp-auth-rep-group-1"

@@ -1,4 +1,4 @@
-variable "target" {
+variable target {
   type = string
 }
 
