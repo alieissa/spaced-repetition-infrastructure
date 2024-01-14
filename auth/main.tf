@@ -143,6 +143,10 @@ resource aws_ecs_task_definition sp_auth {
             name  = "DATABASE_URL"
             value = "ecto://${data.aws_ssm_parameter.db_username.value}:${data.aws_ssm_parameter.db_password.value}@${var.db_address}/${data.aws_ssm_parameter.db_name.value}"
           },
+          {
+            name = "VERIFICATION_URL",
+            value = "https://www.spaced-reps.com"
+          }
         ]
       },
     ]
