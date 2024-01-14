@@ -18,90 +18,56 @@ provider "aws" {
   region  = "us-east-1"
 }
 
-data "aws_availability_zones" "available" {
-  state = "available"
+module cluster {
+ source = "./cluster" 
 }
 
-module "vpc" {
-  source = "./vpc"
+module load_balancer {
+  source = "./load_balancer"
 }
 
-module "cluster" {
-  source = "./cluster"
-
-  auth_subnet_ids    = module.vpc.auth_subnet_ids
-  app_subnet_ids     = module.vpc.app_subnet_ids
-  security_group_ids = [module.security.app_security_group_id, module.security.auth_security_group_id]
-
-  depends_on = [module.vpc]
+module "database" {
+  source = "./database"
 }
 
-module "security" {
-  source = "./security"
-  vpc_id = module.vpc.id
+module "cache" {
+  source = "./cache"
 }
 
-module "load_balancer" {
-  source             = "./load_balancer"
-  vpc_id             = module.vpc.id
-  subnet_ids         = concat(module.vpc.auth_subnet_ids, module.vpc.app_subnet_ids)
-  security_group_ids = [module.security.lb_security_group_id]
-
-  depends_on = [module.security]
+module dns {
+  source             = "./cloudflare"
+  CLOUDFLARE_API_KEY = var.CLOUDFLARE_API_KEY
+  target             = module.load_balancer.lb_dns_name
 }
 
 module "app" {
   source = "./app"
 
-  cluster_arn            = module.cluster.arn
-  capacity_provider_name = module.cluster.capacity_providers[1]
-
-  vpc_id             = module.vpc.id
-  subnets            = module.vpc.app_subnet_ids
-  security_group_ids = [module.security.app_security_group_id]
-
-  db_endpoint         = module.database.db_endpoint
-  lb_target_group_arn = module.load_balancer.app_target_group_arn
+  ecs_cluster_arn            = module.cluster.ecs_cluster_arn
+  lb_id = module.load_balancer.lb_id
+  lb_target_group_arn = module.load_balancer.app_lb_target_group_arn
+  capacity_provider_name = module.cluster.app_capacity_provider_name
 }
 
-module "auth" {
+module auth {
   source = "./auth"
 
-  cluster_arn            = module.cluster.arn
-  capacity_provider_name = module.cluster.capacity_providers[0]
-
-  vpc_id             = module.vpc.id
-  subnets            = module.vpc.auth_subnet_ids
-  security_group_ids = [module.security.auth_security_group_id]
-
-  db_endpoint         = module.database.db_endpoint
-  redis_endpoint      = module.cache.redis_endpoint
-  lb_target_group_arn = module.load_balancer.auth_target_group_arn
-
+  ecs_cluster_arn  = module.cluster.ecs_cluster_arn
+  lb_id            = module.load_balancer.lb_id
+  lb_target_group_arn = module.load_balancer.auth_lb_target_group_arn
+  db_address       = module.database.db_address
+  redis_host       = module.cache.redis_endpoint
+  ecs_capacity_provider_name = module.cluster.auth_capacity_provider_name
+  
   depends_on = [module.cache]
 }
 
-module "bastion" {
-  source = "./bastion"
-  vpc_id = module.vpc.id
-}
+module api {
+  source = "./api"
 
-module "database" {
-  source             = "./database"
-  vpc_id             = module.vpc.id
-  subnets            = concat(module.vpc.auth_subnet_ids, module.vpc.app_subnet_ids)
-  security_group_ids = [module.security.db_security_group_id, module.bastion.security_group_id]
-
-  depends_on = [module.security]
-}
-
-module "cache" {
-  source     = "./cache"
-  subnet_ids = module.vpc.elasticache_subnet_ids
-}
-
-module "dns" {
-  source             = "./cloudflare"
-  CLOUDFLARE_API_KEY = var.CLOUDFLARE_API_KEY
-  target             = module.load_balancer.lb_dns_name
+  db_address       = module.database.db_address
+  lb_id            = module.load_balancer.lb_id
+  lb_target_group_arn = module.load_balancer.api_lb_target_group_arn
+  ecs_cluster_arn  = module.cluster.ecs_cluster_arn
+  ecs_capacity_provider_name = module.cluster.api_capacity_provider_name
 }

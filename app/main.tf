@@ -1,36 +1,35 @@
-data "aws_ecr_repository" "sp" {
-  name = "spaced-repetition-api"
+data aws_acm_certificate sp {
+  domain   = "*.spaced-reps.com"
+  statuses = ["ISSUED"]
 }
 
-data "aws_iam_role" "sp" {
+data aws_ecr_repository sp {
+  name = "spaced-repetition-web"
+}
+
+data aws_iam_role sp {
   name = "SPECSTaskExecution"
 }
 
-data "aws_ssm_parameter" "db_name" {
-  name = "db_name"
-}
-
-data "aws_ssm_parameter" "db_username" {
-  name = "db_username"
-}
-
-data "aws_ssm_parameter" "db_password" {
-  name = "db_password"
-}
-
-data "aws_ssm_parameter" "app_port" {
+data aws_ssm_parameter app_port {
   name = "app_port"
 }
 
-data "aws_ssm_parameter" "secret_key_base" {
-  name = "secret_key_base"
+data aws_security_groups sp_app {
+  filter {
+    name = "tag:Name"
+    values = ["sp-app"]
+  }
 }
 
-locals {
-  container_name = "sp-app"
+data aws_subnets sp_app {
+  filter {
+    name = "tag:Name"
+    values = ["sp-app"]
+  }
 }
 
-resource "aws_ecs_task_definition" "sp_app" {
+resource aws_ecs_task_definition sp_app {
   family                   = "sp-app"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
@@ -41,7 +40,7 @@ resource "aws_ecs_task_definition" "sp_app" {
       {
         cpu    = 1024
         memory = 500
-        name   = local.container_name
+        name   = "sp-app"
         image  = data.aws_ecr_repository.sp.repository_url
 
         logConfiguration = {
@@ -60,36 +59,21 @@ resource "aws_ecs_task_definition" "sp_app" {
             hostPort      = tonumber(data.aws_ssm_parameter.app_port.value)
           },
         ]
-
-        environment = [
-          {
-            name  = "PORT"
-            value = tostring(data.aws_ssm_parameter.app_port.value)
-          },
-          {
-            name  = "DATABASE_URL"
-            value = "ecto://${data.aws_ssm_parameter.db_username.value}:${data.aws_ssm_parameter.db_password.value}@${var.db_endpoint}/${data.aws_ssm_parameter.db_name.value}"
-          },
-          {
-            name  = "SECRET_KEY_BASE"
-            value = data.aws_ssm_parameter.secret_key_base.value
-          }
-        ]
       },
     ]
   )
 
   tags = {
-    description = "Definition of task that is used to create the Spaced Repetition api containers"
+    description = "Definition of task that is used to create the Spaced Repetition web app containers"
   }
 }
 
-resource "aws_ecs_service" "sp_app" {
+resource aws_ecs_service sp_app {
   name                              = "sp-app"
   desired_count                     = 2
   health_check_grace_period_seconds = 300
   task_definition                   = aws_ecs_task_definition.sp_app.arn
-  cluster                           = var.cluster_arn
+  cluster                           = var.ecs_cluster_arn
 
   capacity_provider_strategy {
     base              = 0
@@ -103,12 +87,12 @@ resource "aws_ecs_service" "sp_app" {
   }
 
   network_configuration {
-    subnets         = var.subnets
-    security_groups = var.security_group_ids
+    subnets         = data.aws_subnets.sp_app.ids
+    security_groups = data.aws_security_groups.sp_app.ids
   }
 
   load_balancer {
-    container_name   = local.container_name
+    container_name   = "sp-app"
     target_group_arn = var.lb_target_group_arn
     container_port   = tonumber(data.aws_ssm_parameter.app_port.value)
   }

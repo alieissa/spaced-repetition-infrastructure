@@ -10,9 +10,20 @@ data "aws_ssm_parameter" "db_password" {
   name = "db_password"
 }
 
+data "aws_security_group" "sp_rds" {
+  name = "sp-rds"
+}
+
+data "aws_subnets" "sp" {
+  filter {
+    name   = "tag:Name"
+    values = ["sp-api", "sp-auth"]
+  }
+}
+
 resource "aws_db_subnet_group" "sp_rds" {
   name       = "sp-rds"
-  subnet_ids = var.subnets
+  subnet_ids = data.aws_subnets.sp.ids
 
   tags = {
     Name = "My DB subnet group"
@@ -31,6 +42,7 @@ resource "aws_db_instance" "sp" {
   password = data.aws_ssm_parameter.db_password.value
 
   db_subnet_group_name   = aws_db_subnet_group.sp_rds.name
-  vpc_security_group_ids = var.security_group_ids
-  skip_final_snapshot    = true
+  vpc_security_group_ids = [data.aws_security_group.sp_rds.id]
+
+  skip_final_snapshot = true
 }

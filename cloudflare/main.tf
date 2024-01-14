@@ -6,15 +6,15 @@ terraform {
     }
   }
 }
-provider "cloudflare" {
+provider cloudflare {
   api_key = var.CLOUDFLARE_API_KEY
   email   = "ali.portsudan@gmail.com"
 }
 
-data "cloudflare_zone" "sp" {
+data cloudflare_zone sp {
   name = "spaced-reps.com"
 }
-resource "cloudflare_record" "sp" {
+resource cloudflare_record sp {
   name    = "dev-api"
   type    = "CNAME"
   proxied = true

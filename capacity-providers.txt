@@ -1,0 +1,72 @@
+{
+    "capacityProviders": [
+        {
+            "capacityProviderArn": "arn:aws:ecs:us-east-1:079829475258:capacity-provider/FARGATE",
+            "name": "FARGATE",
+            "status": "ACTIVE",
+            "tags": []
+        },
+        {
+            "capacityProviderArn": "arn:aws:ecs:us-east-1:079829475258:capacity-provider/FARGATE_SPOT",
+            "name": "FARGATE_SPOT",
+            "status": "ACTIVE",
+            "tags": []
+        },
+        {
+            "capacityProviderArn": "arn:aws:ecs:us-east-1:079829475258:capacity-provider/sp-api",
+            "name": "sp-api",
+            "status": "ACTIVE",
+            "autoScalingGroupProvider": {
+                "autoScalingGroupArn": "arn:aws:autoscaling:us-east-1:079829475258:autoScalingGroup:d7f05753-3d4f-4ce8-9767-4561ccf6fc88:autoScalingGroupName/sp-api",
+                "managedScaling": {
+                    "status": "ENABLED",
+                    "targetCapacity": 75,
+                    "minimumScalingStepSize": 1,
+                    "maximumScalingStepSize": 10000,
+                    "instanceWarmupPeriod": 0
+                },
+                "managedTerminationProtection": "DISABLED"
+            },
+            "updateStatus": "DELETE_FAILED",
+            "updateStatusReason": "The capacity provider cannot be deleted because it is associated with cluster: sp. Remove the capacity provider from the cluster and try again.",
+            "tags": []
+        },
+        {
+            "capacityProviderArn": "arn:aws:ecs:us-east-1:079829475258:capacity-provider/sp-api-3",
+            "name": "sp-api-3",
+            "status": "ACTIVE",
+            "autoScalingGroupProvider": {
+                "autoScalingGroupArn": "arn:aws:autoscaling:us-east-1:079829475258:autoScalingGroup:cf9b4dbb-413f-4fe6-b15e-9d242431cc3a:autoScalingGroupName/sp-api",
+                "managedScaling": {
+                    "status": "ENABLED",
+                    "targetCapacity": 75,
+                    "minimumScalingStepSize": 1,
+                    "maximumScalingStepSize": 10000,
+                    "instanceWarmupPeriod": 0
+                },
+                "managedTerminationProtection": "DISABLED"
+            },
+            "tags": []
+        },
+        {
+            "capacityProviderArn": "arn:aws:ecs:us-east-1:079829475258:capacity-provider/sp-auth",
+            "name": "sp-auth",
+            "status": "ACTIVE",
+            "autoScalingGroupProvider": {
+                "autoScalingGroupArn": "arn:aws:autoscaling:us-east-1:079829475258:autoScalingGroup:f5098e62-f483-410a-8260-6812560b7021:autoScalingGroupName/sp-auth",
+                "managedScaling": {
+                    "status": "ENABLED",
+                    "targetCapacity": 75,
+                    "minimumScalingStepSize": 1,
+                    "maximumScalingStepSize": 10000,
+                    "instanceWarmupPeriod": 0
+                },
+                "managedTerminationProtection": "DISABLED"
+            },
+            "updateStatus": "DELETE_FAILED",
+            "updateStatusReason": "The capacity provider cannot be deleted because it is associated with cluster: sp. Remove the capacity provider from the cluster and try again.",
+            "tags": []
+        }
+    ],
+    "failures": []
+}
