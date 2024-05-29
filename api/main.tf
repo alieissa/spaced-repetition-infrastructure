@@ -99,15 +99,17 @@ resource aws_ecs_task_definition sp_api {
 }
 
 resource aws_ecs_service sp_api {
-  name                              = "sp-api"
-  desired_count                     = 2
-  health_check_grace_period_seconds = 300
-  task_definition                   = aws_ecs_task_definition.sp_api.arn
-  cluster                           = var.ecs_cluster_arn
+  name                               = "sp-api"
+  health_check_grace_period_seconds  = 300
+  task_definition                    = aws_ecs_task_definition.sp_api.arn
+  cluster                            = var.ecs_cluster_arn
+  desired_count                      = 2
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 100
 
   capacity_provider_strategy {
-    base   = 0
-    weight = 1
+    base              = 0
+    weight            = 1
     capacity_provider = var.ecs_capacity_provider_name
   }
 
@@ -117,14 +119,14 @@ resource aws_ecs_service sp_api {
   }
 
   network_configuration {
-    subnets = data.aws_subnets.sp_api.ids
+    subnets         = data.aws_subnets.sp_api.ids
     security_groups = data.aws_security_groups.sp_api.ids
   }
 
   load_balancer {
     container_name   = local.container_name
     target_group_arn = var.lb_target_group_arn
-    container_port = tonumber(data.aws_ssm_parameter.api_port.value)
+    container_port   = tonumber(data.aws_ssm_parameter.api_port.value)
   }
 
   tags = {

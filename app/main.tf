@@ -17,14 +17,14 @@ data aws_ssm_parameter app_port {
 
 data aws_security_groups sp_app {
   filter {
-    name = "tag:Name"
+    name   = "tag:Name"
     values = ["sp-app"]
   }
 }
 
 data aws_subnets sp_app {
   filter {
-    name = "tag:Name"
+    name   = "tag:Name"
     values = ["sp-app"]
   }
 }
@@ -69,11 +69,14 @@ resource aws_ecs_task_definition sp_app {
 }
 
 resource aws_ecs_service sp_app {
-  name                              = "sp-app"
-  desired_count                     = 2
-  health_check_grace_period_seconds = 300
-  task_definition                   = aws_ecs_task_definition.sp_app.arn
-  cluster                           = var.ecs_cluster_arn
+  name                               = "sp-app"
+  health_check_grace_period_seconds  = 300
+  task_definition                    = aws_ecs_task_definition.sp_app.arn
+  cluster                            = var.ecs_cluster_arn
+  desired_count                      = 2
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 100
+
 
   capacity_provider_strategy {
     base              = 0
