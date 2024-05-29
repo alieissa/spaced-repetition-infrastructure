@@ -144,7 +144,7 @@ resource aws_ecs_task_definition sp_auth {
             value = "ecto://${data.aws_ssm_parameter.db_username.value}:${data.aws_ssm_parameter.db_password.value}@${var.db_address}/${data.aws_ssm_parameter.db_name.value}"
           },
           {
-            name = "VERIFICATION_URL",
+            name  = "VERIFICATION_URL",
             value = "https://www.spaced-reps.com"
           }
         ]
@@ -158,11 +158,13 @@ resource aws_ecs_task_definition sp_auth {
 }
 
 resource aws_ecs_service sp_auth {
-  name                              = "sp-auth"
-  desired_count                     = 2
-  health_check_grace_period_seconds = 300
-  task_definition                   = aws_ecs_task_definition.sp_auth.arn
-  cluster                           = var.ecs_cluster_arn
+  name                               = "sp-auth"
+  health_check_grace_period_seconds  = 300
+  task_definition                    = aws_ecs_task_definition.sp_auth.arn
+  cluster                            = var.ecs_cluster_arn
+  desired_count                      = 2
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 100
 
   capacity_provider_strategy {
     base              = 0
@@ -183,7 +185,7 @@ resource aws_ecs_service sp_auth {
   load_balancer {
     container_name   = local.container_name
     target_group_arn = var.lb_target_group_arn
-    container_port = tonumber(data.aws_ssm_parameter.auth_port.value)
+    container_port   = tonumber(data.aws_ssm_parameter.auth_port.value)
   }
 
   tags = {
