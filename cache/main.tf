@@ -15,12 +15,13 @@ resource aws_elasticache_subnet_group sp_auth {
 }
 
 resource aws_elasticache_replication_group sp_auth {
-  num_node_groups            = 2
-  replicas_per_node_group    = 1
+  // Creates one primary node and two replicas
+  num_node_groups            = 1
+  replicas_per_node_group    = 2
   replication_group_id       = "sp-auth-rep-group-1"
   description                = "Redis replication group/shards"
   node_type                  = "cache.t4g.micro"
-  parameter_group_name       = "default.redis7.cluster.on"
+  parameter_group_name       = "default.redis7"
   automatic_failover_enabled = true
   port                       = tonumber(data.aws_ssm_parameter.redis_port.value)
 
