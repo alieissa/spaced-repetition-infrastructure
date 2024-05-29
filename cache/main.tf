@@ -9,6 +9,13 @@ data aws_subnets sp_cache {
   }
 }
 
+data aws_security_groups sp_cache {
+  filter {
+    name   = "tag:Name"
+    values = ["sp-cache"]
+  }
+}
+
 resource aws_elasticache_subnet_group sp_auth {
   name       = "sp-auth-sg"
   subnet_ids = data.aws_subnets.sp_cache.ids
@@ -26,6 +33,7 @@ resource aws_elasticache_replication_group sp_auth {
   port                       = tonumber(data.aws_ssm_parameter.redis_port.value)
 
   subnet_group_name = aws_elasticache_subnet_group.sp_auth.name
+  security_group_ids = data.aws_security_groups.sp_cache.ids
 
   lifecycle {
     ignore_changes = [num_cache_clusters]
