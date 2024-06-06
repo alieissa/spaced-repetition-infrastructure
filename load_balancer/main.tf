@@ -49,7 +49,7 @@ resource aws_lb sp {
 
 resource aws_lb_target_group sp_auth {
   protocol    = "HTTP"
-  target_type = "ip"
+  target_type = "instance"
 
   name   = "sp-auth"
   vpc_id = data.aws_vpc.sp.id

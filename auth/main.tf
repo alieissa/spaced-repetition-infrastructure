@@ -69,7 +69,7 @@ locals {
 // TODO Create hardcoded task definition
 resource aws_ecs_task_definition sp_auth {
   family                   = "sp-auth"
-  network_mode             = "awsvpc"
+  network_mode             = "bridge"
   requires_compatibilities = ["EC2"]
   execution_role_arn       = data.aws_iam_role.sp.arn
 
@@ -175,11 +175,6 @@ resource aws_ecs_service sp_auth {
   deployment_circuit_breaker {
     enable   = true
     rollback = true
-  }
-
-  network_configuration {
-    subnets         = data.aws_subnets.sp_auth.ids
-    security_groups = data.aws_security_groups.sp_auth.ids
   }
 
   load_balancer {
