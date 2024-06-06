@@ -1,16 +1,16 @@
-data aws_vpc sp {
+data "aws_vpc" "sp" {
   filter {
     name   = "tag:Name"
     values = ["sp"]
   }
 }
 
-data aws_acm_certificate sp {
+data "aws_acm_certificate" "sp" {
   domain   = "*.spaced-reps.com"
   statuses = ["ISSUED"]
 }
 
-data aws_subnets sp {
+data "aws_subnets" "sp" {
   filter {
     name = "tag:Name"
     // TODO: Find if these are necessary
@@ -20,26 +20,26 @@ data aws_subnets sp {
   }
 }
 
-data aws_security_groups sp_lb {
+data "aws_security_groups" "sp_lb" {
   filter {
     name   = "tag:Name"
     values = ["sp-lb"]
   }
 }
 
-data aws_ssm_parameter auth_port {
+data "aws_ssm_parameter" "auth_port" {
   name = "auth_port"
 }
 
-data aws_ssm_parameter api_port {
+data "aws_ssm_parameter" "api_port" {
   name = "api_port"
 }
 
-data aws_ssm_parameter app_port {
+data "aws_ssm_parameter" "app_port" {
   name = "app_port"
 }
 
-resource aws_lb sp {
+resource "aws_lb" "sp" {
   name                       = "sp"
   internal                   = false
   enable_deletion_protection = false
@@ -47,7 +47,7 @@ resource aws_lb sp {
   security_groups            = data.aws_security_groups.sp_lb.ids
 }
 
-resource aws_lb_target_group sp_auth {
+resource "aws_lb_target_group" "sp_auth" {
   protocol    = "HTTP"
   target_type = "instance"
 
@@ -64,7 +64,7 @@ resource aws_lb_target_group sp_auth {
   }
 }
 
-resource aws_lb_target_group sp_api {
+resource "aws_lb_target_group" "sp_api" {
   protocol    = "HTTP"
   target_type = "ip"
 
@@ -81,7 +81,7 @@ resource aws_lb_target_group sp_api {
   }
 }
 
-resource aws_lb_target_group sp_app {
+resource "aws_lb_target_group" "sp_app" {
   protocol    = "HTTP"
   target_type = "ip"
 
@@ -102,7 +102,7 @@ resource aws_lb_target_group sp_app {
 // They share the same listener port, but lb routes
 // to them according to host, see aws_lb_listener_rule
 // resources below
-resource aws_lb_listener sp {
+resource "aws_lb_listener" "sp" {
   protocol = "HTTPS"
   port     = 443
 
@@ -115,7 +115,7 @@ resource aws_lb_listener sp {
   }
 }
 
-resource aws_lb_listener sp_api {
+resource "aws_lb_listener" "sp_api" {
   protocol = "HTTP"
   port     = tonumber(data.aws_ssm_parameter.api_port.value)
 
@@ -127,7 +127,7 @@ resource aws_lb_listener sp_api {
   }
 }
 
-resource aws_lb_listener_rule sp_auth {
+resource "aws_lb_listener_rule" "sp_auth" {
   listener_arn = aws_lb_listener.sp.arn
 
   action {
@@ -137,12 +137,12 @@ resource aws_lb_listener_rule sp_auth {
 
   condition {
     host_header {
-      values = ["api*spaced-reps.com"]
+      values = ["staging-api.spaced-reps.com"]
     }
   }
 }
 
-resource aws_lb_listener_rule sp_app {
+resource "aws_lb_listener_rule" "sp_app" {
   listener_arn = aws_lb_listener.sp.arn
 
   action {

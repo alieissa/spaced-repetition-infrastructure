@@ -1,35 +1,35 @@
-data aws_acm_certificate sp {
+data "aws_acm_certificate" "sp" {
   domain   = "*.spaced-reps.com"
   statuses = ["ISSUED"]
 }
 
-data aws_ecr_repository sp {
+data "aws_ecr_repository" "sp" {
   name = "spaced-repetition-web"
 }
 
-data aws_iam_role sp {
+data "aws_iam_role" "sp" {
   name = "SPECSTaskExecution"
 }
 
-data aws_ssm_parameter app_port {
+data "aws_ssm_parameter" "app_port" {
   name = "app_port"
 }
 
-data aws_security_groups sp_app {
+data "aws_security_groups" "sp_app" {
   filter {
     name   = "tag:Name"
     values = ["sp-app"]
   }
 }
 
-data aws_subnets sp_app {
+data "aws_subnets" "sp_app" {
   filter {
     name   = "tag:Name"
     values = ["sp-app"]
   }
 }
 
-resource aws_ecs_task_definition sp_app {
+resource "aws_ecs_task_definition" "sp_app" {
   family                   = "sp-app"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
@@ -68,7 +68,7 @@ resource aws_ecs_task_definition sp_app {
   }
 }
 
-resource aws_ecs_service sp_app {
+resource "aws_ecs_service" "sp_app" {
   name                               = "sp-app"
   health_check_grace_period_seconds  = 300
   task_definition                    = aws_ecs_task_definition.sp_app.arn
