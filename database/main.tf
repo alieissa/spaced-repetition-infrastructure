@@ -34,7 +34,7 @@ resource "aws_db_instance" "sp" {
   identifier        = "sp-rds"
   allocated_storage = 20
   engine            = "postgres"
-  engine_version    = "14.7"
+  engine_version    = "14.10"
   instance_class    = "db.t3.micro"
 
   db_name  = data.aws_ssm_parameter.db_name.value
