@@ -149,7 +149,7 @@ resource "aws_ecs_task_definition" "sp_auth" {
           },
           {
             name  = "VERIFICATION_URL",
-            value = "https://www.spaced-reps.com"
+            value = "https://staging.spaced-reps.com"
           }
         ]
       },

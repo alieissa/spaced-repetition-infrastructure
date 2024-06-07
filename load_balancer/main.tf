@@ -152,7 +152,7 @@ resource "aws_lb_listener_rule" "sp_app" {
 
   condition {
     host_header {
-      values = ["spaced-reps.com"]
+      values = ["staging.spaced-reps.com"]
     }
   }
 }
