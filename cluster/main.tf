@@ -1,53 +1,53 @@
-data aws_security_groups sp {
+data "aws_security_groups" "sp" {
   filter {
     name   = "tag:Name"
     values = ["sp-auth"]
   }
 }
 
-data aws_subnets sp_auth {
+data "aws_subnets" "sp_auth" {
   filter {
     name   = "tag:Name"
     values = ["sp-auth"]
   }
 }
 
-data aws_subnets sp_api {
+data "aws_subnets" "sp_api" {
   filter {
     name   = "tag:Name"
     values = ["sp-api"]
   }
 }
 
-data aws_subnets sp_app {
+data "aws_subnets" "sp_app" {
   filter {
     name   = "tag:Name"
     values = ["sp-app"]
   }
 }
 
-data aws_launch_template sp_auth {
+data "aws_launch_template" "sp_auth" {
   filter {
     name   = "tag:Name"
     values = ["sp-auth"]
   }
 }
 
-data aws_launch_template sp_api {
+data "aws_launch_template" "sp_api" {
   filter {
     name   = "tag:Name"
     values = ["sp-api"]
   }
 }
 
-data aws_launch_template sp_app {
+data "aws_launch_template" "sp_app" {
   filter {
     name   = "tag:Name"
     values = ["sp-app"]
   }
 }
 
-resource aws_autoscaling_group sp_auth {
+resource "aws_autoscaling_group" "sp_auth" {
 
   name             = "sp-auth"
   max_size         = 2
@@ -63,7 +63,7 @@ resource aws_autoscaling_group sp_auth {
   }
 }
 
-resource aws_autoscaling_group sp_api {
+resource "aws_autoscaling_group" "sp_api" {
 
   name             = "sp-api"
   max_size         = 2
@@ -79,7 +79,7 @@ resource aws_autoscaling_group sp_api {
   }
 }
 
-resource aws_autoscaling_group sp_app {
+resource "aws_autoscaling_group" "sp_app" {
 
   name             = "sp-app"
   max_size         = 2
@@ -94,7 +94,7 @@ resource aws_autoscaling_group sp_app {
   }
 }
 
-resource aws_ecs_capacity_provider sp_auth {
+resource "aws_ecs_capacity_provider" "sp_auth" {
   name = "sp-auth--1"
 
   auto_scaling_group_provider {
@@ -114,7 +114,7 @@ resource aws_ecs_capacity_provider sp_auth {
   }
 }
 
-resource aws_ecs_capacity_provider sp_api {
+resource "aws_ecs_capacity_provider" "sp_api" {
   name = "sp-api--1"
 
   auto_scaling_group_provider {
@@ -134,7 +134,7 @@ resource aws_ecs_capacity_provider sp_api {
   }
 }
 
-resource aws_ecs_capacity_provider sp_app {
+resource "aws_ecs_capacity_provider" "sp_app" {
   name = "sp-app--1"
 
   auto_scaling_group_provider {
@@ -154,7 +154,7 @@ resource aws_ecs_capacity_provider sp_app {
   }
 }
 
-resource aws_ecs_cluster sp {
+resource "aws_ecs_cluster" "sp" {
   name = "sp"
 
   tags = {

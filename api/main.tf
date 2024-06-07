@@ -1,39 +1,39 @@
-data aws_ecr_repository sp {
+data "aws_ecr_repository" "sp" {
   name = "spaced-repetition-api"
 }
 
-data aws_iam_role sp {
+data "aws_iam_role" "sp" {
   name = "SPECSTaskExecution"
 }
 
-data aws_ssm_parameter db_name {
+data "aws_ssm_parameter" "db_name" {
   name = "db_name"
 }
 
-data aws_ssm_parameter db_username {
+data "aws_ssm_parameter" "db_username" {
   name = "db_username"
 }
 
-data aws_ssm_parameter db_password {
+data "aws_ssm_parameter" "db_password" {
   name = "db_password"
 }
 
-data aws_ssm_parameter api_port {
+data "aws_ssm_parameter" "api_port" {
   name = "api_port"
 }
 
-data aws_ssm_parameter secret_key_base {
+data "aws_ssm_parameter" "secret_key_base" {
   name = "secret_key_base"
 }
 
-data aws_subnets sp_api {
+data "aws_subnets" "sp_api" {
   filter {
     name   = "tag:Name"
     values = ["sp-api"]
   }
 }
 
-data aws_security_groups sp_api {
+data "aws_security_groups" "sp_api" {
   filter {
     name   = "tag:Name"
     values = ["sp-api"]
@@ -44,7 +44,7 @@ locals {
   container_name = "sp-api"
 }
 
-resource aws_ecs_task_definition sp_api {
+resource "aws_ecs_task_definition" "sp_api" {
   family                   = "sp-api"
   network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
@@ -98,7 +98,7 @@ resource aws_ecs_task_definition sp_api {
   }
 }
 
-resource aws_ecs_service sp_api {
+resource "aws_ecs_service" "sp_api" {
   name                               = "sp-api"
   health_check_grace_period_seconds  = 300
   task_definition                    = aws_ecs_task_definition.sp_api.arn

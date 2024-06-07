@@ -18,11 +18,11 @@ provider "aws" {
   region  = "us-east-1"
 }
 
-module cluster {
- source = "./cluster" 
+module "cluster" {
+  source = "./cluster"
 }
 
-module load_balancer {
+module "load_balancer" {
   source = "./load_balancer"
 }
 
@@ -34,7 +34,7 @@ module "cache" {
   source = "./cache"
 }
 
-module dns {
+module "dns" {
   source             = "./cloudflare"
   CLOUDFLARE_API_KEY = var.CLOUDFLARE_API_KEY
   target             = module.load_balancer.lb_dns_name
@@ -43,31 +43,32 @@ module dns {
 module "app" {
   source = "./app"
 
-  ecs_cluster_arn            = module.cluster.ecs_cluster_arn
-  lb_id = module.load_balancer.lb_id
-  lb_target_group_arn = module.load_balancer.app_lb_target_group_arn
+  ecs_cluster_arn        = module.cluster.ecs_cluster_arn
+  lb_id                  = module.load_balancer.lb_id
+  lb_target_group_arn    = module.load_balancer.app_lb_target_group_arn
   capacity_provider_name = module.cluster.app_capacity_provider_name
 }
 
-module auth {
+module "auth" {
   source = "./auth"
 
-  ecs_cluster_arn  = module.cluster.ecs_cluster_arn
-  lb_id            = module.load_balancer.lb_id
-  lb_target_group_arn = module.load_balancer.auth_lb_target_group_arn
-  db_address       = module.database.db_address
-  redis_host       = module.cache.redis_endpoint
+  ecs_cluster_arn            = module.cluster.ecs_cluster_arn
+  lb_id                      = module.load_balancer.lb_id
+  lb_dns_name                = module.load_balancer.lb_dns_name
+  lb_target_group_arn        = module.load_balancer.auth_lb_target_group_arn
+  db_address                 = module.database.db_address
+  redis_host                 = module.cache.redis_endpoint
   ecs_capacity_provider_name = module.cluster.auth_capacity_provider_name
-  
+
   depends_on = [module.cache]
 }
 
-module api {
+module "api" {
   source = "./api"
 
-  db_address       = module.database.db_address
-  lb_id            = module.load_balancer.lb_id
-  lb_target_group_arn = module.load_balancer.api_lb_target_group_arn
-  ecs_cluster_arn  = module.cluster.ecs_cluster_arn
+  db_address                 = module.database.db_address
+  lb_id                      = module.load_balancer.lb_id
+  lb_target_group_arn        = module.load_balancer.api_lb_target_group_arn
+  ecs_cluster_arn            = module.cluster.ecs_cluster_arn
   ecs_capacity_provider_name = module.cluster.api_capacity_provider_name
 }

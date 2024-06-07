@@ -1,59 +1,63 @@
-data aws_acm_certificate sp {
+data "aws_acm_certificate" "sp" {
   domain   = "*.spaced-reps.com"
   statuses = ["ISSUED"]
 }
 
-data aws_ecr_repository sp {
+data "aws_ecr_repository" "sp" {
   name = "spaced-repetition-user-management"
 }
 
-data aws_iam_role sp {
+data "aws_iam_role" "sp" {
   name = "SPECSTaskExecution"
 }
 
-data aws_ssm_parameter db_name {
+data "aws_ssm_parameter" "db_name" {
   name = "db_name"
 }
 
-data aws_ssm_parameter db_username {
+data "aws_ssm_parameter" "db_username" {
   name = "db_username"
 }
 
-data aws_ssm_parameter db_password {
+data "aws_ssm_parameter" "db_password" {
   name = "db_password"
 }
 
-data aws_ssm_parameter auth_port {
+data "aws_ssm_parameter" "auth_port" {
   name = "auth_port"
 }
 
-data aws_ssm_parameter secret_key_base {
+data "aws_ssm_parameter" "api_port" {
+  name = "api_port"
+}
+
+data "aws_ssm_parameter" "secret_key_base" {
   name = "secret_key_base"
 }
 
-data aws_ssm_parameter ses_access_key {
+data "aws_ssm_parameter" "ses_access_key" {
   name = "ses_access_key"
 }
 
-data aws_ssm_parameter ses_secret {
+data "aws_ssm_parameter" "ses_secret" {
   name = "ses_secret"
 }
 
-data aws_vpc sp_vpc {
+data "aws_vpc" "sp_vpc" {
   filter {
     name   = "tag:Name"
     values = ["sp"]
   }
 }
 
-data aws_subnets sp_auth {
+data "aws_subnets" "sp_auth" {
   filter {
     name   = "tag:Name"
     values = ["sp-auth"]
   }
 }
 
-data aws_security_groups sp_auth {
+data "aws_security_groups" "sp_auth" {
   filter {
 
     name   = "tag:Name"
@@ -67,9 +71,9 @@ locals {
 }
 
 // TODO Create hardcoded task definition
-resource aws_ecs_task_definition sp_auth {
+resource "aws_ecs_task_definition" "sp_auth" {
   family                   = "sp-auth"
-  network_mode             = "awsvpc"
+  network_mode             = "bridge"
   requires_compatibilities = ["EC2"]
   execution_role_arn       = data.aws_iam_role.sp.arn
 
@@ -157,7 +161,7 @@ resource aws_ecs_task_definition sp_auth {
   }
 }
 
-resource aws_ecs_service sp_auth {
+resource "aws_ecs_service" "sp_auth" {
   name                               = "sp-auth"
   health_check_grace_period_seconds  = 300
   task_definition                    = aws_ecs_task_definition.sp_auth.arn
@@ -175,11 +179,6 @@ resource aws_ecs_service sp_auth {
   deployment_circuit_breaker {
     enable   = true
     rollback = true
-  }
-
-  network_configuration {
-    subnets         = data.aws_subnets.sp_auth.ids
-    security_groups = data.aws_security_groups.sp_auth.ids
   }
 
   load_balancer {
