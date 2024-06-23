@@ -43,6 +43,14 @@ data "aws_ssm_parameter" "ses_secret" {
   name = "ses_secret"
 }
 
+data "aws_ssm_parameter" "verification_url" {
+  name = "verification_url"
+}
+
+data aws_ssm_parameter reset_password_url {
+  name = "reset_password_url"
+}
+
 data "aws_vpc" "sp_vpc" {
   filter {
     name   = "tag:Name"
@@ -104,16 +112,24 @@ resource "aws_ecs_task_definition" "sp_auth" {
 
         environment = [
           {
+            name  = "APP_ENDPOINT"
+            value = "${var.lb_dns_name}:${data.aws_ssm_parameter.api_port.value}"
+          },
+          {
             name  = "REGION"
-            value = "us-east-1"
+            value = local.region
           },
           {
             name  = "PORT"
             value = tostring(data.aws_ssm_parameter.auth_port.value)
           },
           {
-            name  = "REDIS_HOST",
+            name  = "CACHE_HOST",
             value = var.redis_host
+          },
+          {
+            name  = "DB_HOSTNAME"
+            value = var.db_address
           },
           {
             name  = "DB_NAME"
@@ -128,10 +144,6 @@ resource "aws_ecs_task_definition" "sp_auth" {
             value = data.aws_ssm_parameter.db_password.value
           },
           {
-            name  = "POSTGRES_HOSTNAME"
-            value = var.db_address
-          },
-          {
             name  = "SECRET_KEY_BASE"
             value = data.aws_ssm_parameter.secret_key_base.value
           },
@@ -144,12 +156,12 @@ resource "aws_ecs_task_definition" "sp_auth" {
             value = data.aws_ssm_parameter.ses_secret.value
           },
           {
-            name  = "DATABASE_URL"
-            value = "ecto://${data.aws_ssm_parameter.db_username.value}:${data.aws_ssm_parameter.db_password.value}@${var.db_address}/${data.aws_ssm_parameter.db_name.value}"
+            name  = "VERIFICATION_URL",
+            value = data.aws_ssm_parameter.verification_url.value
           },
           {
-            name  = "VERIFICATION_URL",
-            value = "https://staging.spaced-reps.com"
+            name = "RESET_PASSWORD_URL",
+            value = data.aws_ssm_parameter.reset_password_url.value
           }
         ]
       },
