@@ -46,7 +46,7 @@ locals {
 
 resource "aws_ecs_task_definition" "sp_api" {
   family                   = "sp-api"
-  network_mode             = "awsvpc"
+  network_mode             = "bridge"
   requires_compatibilities = ["EC2"]
   execution_role_arn       = data.aws_iam_role.sp.arn
 
@@ -116,11 +116,6 @@ resource "aws_ecs_service" "sp_api" {
   deployment_circuit_breaker {
     enable   = true
     rollback = true
-  }
-
-  network_configuration {
-    subnets         = data.aws_subnets.sp_api.ids
-    security_groups = data.aws_security_groups.sp_api.ids
   }
 
   load_balancer {
