@@ -18,6 +18,14 @@ data "aws_ssm_parameter" "db_password" {
   name = "db_password"
 }
 
+data "aws_ssm_parameter" "s3_access_key" {
+  name = "s3_access_key"
+}
+
+data "aws_ssm_parameter" "s3_secret" {
+  name = "s3_secret"
+}
+
 data "aws_ssm_parameter" "api_port" {
   name = "api_port"
 }
@@ -42,6 +50,7 @@ data "aws_security_groups" "sp_api" {
 
 locals {
   container_name = "sp-api"
+  region = "us-east-1"
 }
 
 resource "aws_ecs_task_definition" "sp_api" {
@@ -77,16 +86,40 @@ resource "aws_ecs_task_definition" "sp_api" {
 
         environment = [
           {
+            name  = "REGION"
+            value = local.region
+          },
+          {
             name  = "PORT"
             value = tostring(data.aws_ssm_parameter.api_port.value)
           },
           {
-            name  = "DATABASE_URL"
-            value = "ecto://${data.aws_ssm_parameter.db_username.value}:${data.aws_ssm_parameter.db_password.value}@${var.db_address}/${data.aws_ssm_parameter.db_name.value}"
+            name  = "DB_HOSTNAME"
+            value = var.db_address
+          },
+          {
+            name  = "DB_NAME"
+            value = data.aws_ssm_parameter.db_name.value
+          },
+          {
+            name  = "DB_USERNAME"
+            value = data.aws_ssm_parameter.db_username.value
+          },
+          {
+            name  = "DB_PASSWORD"
+            value = data.aws_ssm_parameter.db_password.value
           },
           {
             name  = "SECRET_KEY_BASE"
             value = data.aws_ssm_parameter.secret_key_base.value
+          },
+          {
+            name  = "AWS_S3_ACCESS_KEY"
+            value = data.aws_ssm_parameter.s3_access_key.value
+          },
+          {
+            name  = "AWS_S3_SECRET_ACCESS_KEY"
+            value = data.aws_ssm_parameter.s3_secret.value
           }
         ]
       },
